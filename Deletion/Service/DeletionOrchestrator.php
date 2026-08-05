@@ -14,13 +14,13 @@ final class DeletionOrchestrator implements DeletionOrchestratorInterface
 {
     /**
      * @param iterable<DeletionMiddlewareInterface> $middlewares
-     * @param EntityManagerInterface                $em
-     * @param DeletionService                       $analyzer
+     * @param EntityManagerInterface $em
+     * @param DeletionService $analyzer
      */
     public function __construct(
         private readonly EntityManagerInterface $em,
-        private readonly DeletionService $analyzer,
-        private readonly iterable $middlewares = []
+        private readonly DeletionService        $analyzer,
+        private readonly iterable               $middlewares = []
     )
     {
     }
@@ -81,10 +81,10 @@ final class DeletionOrchestrator implements DeletionOrchestratorInterface
     }
 
     /**
-     * @param array<string,array<int|string,int|string>>                                                                                         $deleteMap
+     * @param array<string,array<int|string,int|string>> $deleteMap
      * @param array<int,array{joinTable:string,joinColumn:string,inverseJoinColumn:string,parentId:int|string,childClass:string,childIds:array}> $detach
-     * @param object                                                                                                                             $parent
-     * @param RelationsDto                                                                                                                       $relations
+     * @param object $parent
+     * @param RelationsDto $relations
      */
     private function buildRecursive(object $parent, RelationsDto $relations, array &$deleteMap, array &$detach): void
     {
@@ -117,7 +117,7 @@ final class DeletionOrchestrator implements DeletionOrchestratorInterface
             // добавить ids в deleteMap
             $deleteMap[$group->childClass] = $deleteMap[$group->childClass] ?? ['ids' => [], 'field' => $idField];
             foreach ($group->ids as $cid) {
-                $deleteMap[$group->childClass]['ids'][(string) $cid] = $cid;
+                $deleteMap[$group->childClass]['ids'][(string)$cid] = $cid;
             }
 
             // рекурсия для каждого id
@@ -142,7 +142,7 @@ final class DeletionOrchestrator implements DeletionOrchestratorInterface
 
     /**
      * @param list<DependentGroupDto> $groups
-     * @param string                  $childClass
+     * @param string $childClass
      */
     private function findGroup(array $groups, string $childClass): ?DependentGroupDto
     {
@@ -175,7 +175,7 @@ final class DeletionOrchestrator implements DeletionOrchestratorInterface
 
     /**
      * @param array<int|string> $ids
-     * @param string            $entityClass
+     * @param string $entityClass
      */
     private function deleteByIds(string $entityClass, array $ids, string $field): void
     {
@@ -183,8 +183,7 @@ final class DeletionOrchestrator implements DeletionOrchestratorInterface
         $qb->delete($entityClass, 'e')
             ->where($qb->expr()->in(sprintf('e.%s', $field), ':ids'))
             ->setParameter('ids', $ids)
-            ->getQuery()->execute()
-        ;
+            ->getQuery()->execute();
     }
 
     public function getOrderedPlan(object $root): OrderedPlanDto

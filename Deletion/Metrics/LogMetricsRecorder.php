@@ -22,7 +22,9 @@ final class LogMetricsRecorder implements MetricsRecorderInterface
     /**
      * @param LoggerInterface $logger PSR-3 логгер
      */
-    public function __construct(private readonly LoggerInterface $logger) {}
+    public function __construct(private readonly LoggerInterface $logger)
+    {
+    }
 
     /**
      * {@inheritdoc}

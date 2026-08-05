@@ -19,13 +19,14 @@ use Throwable;
 final class DeletionOrchestratorWrapper implements DeletionOrchestratorInterface
 {
     /**
-     * @param DeletionOrchestrator                  $inner       оригинальный оркестратор (final)
+     * @param DeletionOrchestrator $inner оригинальный оркестратор (final)
      * @param iterable<DeletionMiddlewareInterface> $middlewares коллекция middleware для уведомлений об ошибках
      */
     public function __construct(
         private readonly DeletionOrchestrator $inner,
-        private readonly iterable $middlewares
-    ) {
+        private readonly iterable             $middlewares
+    )
+    {
     }
 
     /**
@@ -67,7 +68,7 @@ final class DeletionOrchestratorWrapper implements DeletionOrchestratorInterface
     /**
      * Уведомляет все middleware, поддерживающие метод onError, о возникшем исключении.
      *
-     * @param object    $root      корневая сущность, операция над которой была прервана
+     * @param object $root корневая сущность, операция над которой была прервана
      * @param Throwable $exception возникшее исключение
      */
     private function notifyError(object $root, Throwable $exception): void

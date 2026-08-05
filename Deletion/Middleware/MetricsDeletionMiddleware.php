@@ -30,13 +30,14 @@ final class MetricsDeletionMiddleware implements DeletionMiddlewareInterface
     private WeakMap $timings;
 
     /**
-     * @param MetricsRecorderInterface $metrics           рекордер метрик (лог, Prometheus и т.д.)
-     * @param list<class-string>       $supportedClasses  опционально – только для этих классов собирать метрики
+     * @param MetricsRecorderInterface $metrics рекордер метрик (лог, Prometheus и т.д.)
+     * @param list<class-string> $supportedClasses опционально – только для этих классов собирать метрики
      */
     public function __construct(
         private readonly MetricsRecorderInterface $metrics,
-        private readonly array $supportedClasses = [],
-    ) {
+        private readonly array                    $supportedClasses = [],
+    )
+    {
         $this->timings = new WeakMap();
     }
 
@@ -183,7 +184,7 @@ final class MetricsDeletionMiddleware implements DeletionMiddlewareInterface
      * - увеличивает счётчик ошибок
      * - закрывает все активные in-progress gauges, чтобы они не "зависли"
      *
-     * @param object    $root      корневая сущность, операция над которой была прервана
+     * @param object $root корневая сущность, операция над которой была прервана
      * @param Throwable $exception возникшее исключение
      */
     public function onError(object $root, Throwable $exception): void
@@ -215,9 +216,9 @@ final class MetricsDeletionMiddleware implements DeletionMiddlewareInterface
      * Если фаза с таким ключом уже существует, повторный вызов игнорируется.
      * При первом открытии фазы инкрементирует соответствующий gauge.
      *
-     * @param object                $root   корневая сущность
-     * @param string                $key    уникальный идентификатор фазы
-     * @param string                $gauge  имя gauge-метрики
+     * @param object $root корневая сущность
+     * @param string $key уникальный идентификатор фазы
+     * @param string $gauge имя gauge-метрики
      * @param array<string, string> $labels лейблы для gauge
      */
     private function start(object $root, string $key, string $gauge, array $labels): void
@@ -226,8 +227,8 @@ final class MetricsDeletionMiddleware implements DeletionMiddlewareInterface
 
         if (!isset($state['phases'][$key])) {
             $state['phases'][$key] = [
-                'start'  => microtime(true),
-                'gauge'  => $gauge,
+                'start' => microtime(true),
+                'gauge' => $gauge,
                 'labels' => $labels,
             ];
             $this->timings[$root] = $state;
@@ -242,7 +243,7 @@ final class MetricsDeletionMiddleware implements DeletionMiddlewareInterface
      * Удаляет фазу из WeakMap, но не уменьшает gauge – это делается в after‑методах.
      *
      * @param object $root корневая сущность
-     * @param string $key  уникальный идентификатор фазы
+     * @param string $key уникальный идентификатор фазы
      *
      * @return float|null длительность в секундах или null, если фаза не была открыта
      */

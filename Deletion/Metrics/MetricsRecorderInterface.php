@@ -26,10 +26,10 @@ interface MetricsRecorderInterface
      * - количество ошибок
      * - количество удалённых сущностей
      *
-     * @param string               $name   имя метрики (например, 'deletion_root_started_total')
+     * @param string $name имя метрики (например, 'deletion_root_started_total')
      * @param array<string, string> $labels ассоциативный массив лейблов для группировки
      *                                      (например, ['root_class' => 'OrderEntity'])
-     * @param int                  $value  значение, на которое увеличить счётчик (по умолчанию 1)
+     * @param int $value значение, на которое увеличить счётчик (по умолчанию 1)
      */
     public function incrementCounter(string $name, array $labels = [], int $value = 1): void;
 
@@ -43,8 +43,8 @@ interface MetricsRecorderInterface
      * Значения автоматически распределяются по корзинам (buckets) для расчёта
      * квантилей (p50, p95, p99) и средних значений.
      *
-     * @param string               $name   имя метрики (например, 'deletion_root_duration_seconds')
-     * @param float|int            $value  наблюдаемое значение (длительность, размер и т.д.)
+     * @param string $name имя метрики (например, 'deletion_root_duration_seconds')
+     * @param float|int $value наблюдаемое значение (длительность, размер и т.д.)
      * @param array<string, string> $labels ассоциативный массив лейблов
      */
     public function observeHistogram(string $name, float|int $value, array $labels = []): void;
@@ -59,7 +59,7 @@ interface MetricsRecorderInterface
      * Важно: каждый вызов incrementGauge должен быть сбалансирован
      * соответствующим decrementGauge, чтобы избежать утечек.
      *
-     * @param string               $name   имя метрики (например, 'deletion_root_in_progress')
+     * @param string $name имя метрики (например, 'deletion_root_in_progress')
      * @param array<string, string> $labels ассоциативный массив лейблов
      */
     public function incrementGauge(string $name, array $labels = []): void;
@@ -70,7 +70,7 @@ interface MetricsRecorderInterface
      * Декрементирует gauge, обычно вызывается после завершения операции
      * или при возникновении ошибки для корректного закрытия фазы.
      *
-     * @param string               $name   имя метрики
+     * @param string $name имя метрики
      * @param array<string, string> $labels ассоциативный массив лейблов
      */
     public function decrementGauge(string $name, array $labels = []): void;
