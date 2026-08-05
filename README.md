@@ -15,7 +15,7 @@
   - [3.8. Производительность и архитектура](#38-производительность-и-архитектура)
   - [3.9. `DeletionOrchestrator` объявлен `final`](#39-deletionorchestrator-объявлен-final)
 - [4. Итоговые рекомендации](#4-итоговые-рекомендации)
-- [5. Реализация MetricsDeletionMiddleware] (5. Реализация MetricsDeletionMiddleware)
+- [5. Реализация MetricsDeletionMiddleware](5. Реализация MetricsDeletionMiddleware)
 
 ---
 
