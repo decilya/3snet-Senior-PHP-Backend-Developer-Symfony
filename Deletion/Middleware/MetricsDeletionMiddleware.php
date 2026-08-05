@@ -203,15 +203,20 @@ final class MetricsDeletionMiddleware implements DeletionMiddlewareInterface
      * @param array<string, string>    $labels лейблы для gauge
      */
     private function start(object $root, string $key, string $gauge, array $labels): void
-    {
-        $state = $this->timings[$root] ?? ['phases' => []];
-        $state['phases'][$key] = [
-            'start'  => microtime(true),
-            'gauge'  => $gauge,
-            'labels' => $labels,
-        ];
-        $this->timings[$root] = $state;
-    }
+	{
+		$state = $this->timings[$root] ?? ['phases' => []];
+
+		if (!isset($state['phases'][$key])) {
+			$state['phases'][$key] = [
+				'start' => microtime(true),
+				'gauge' => $gauge,
+				'labels' => $labels,
+			];
+			$this->timings[$root] = $state;
+
+			$this->metrics->incrementGauge($gauge, $labels);
+		}
+	}
 
     /**
      * Завершает фазу и возвращает длительность, если фаза была активна.
