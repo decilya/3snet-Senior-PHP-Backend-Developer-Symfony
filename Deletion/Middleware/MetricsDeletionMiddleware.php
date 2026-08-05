@@ -17,6 +17,8 @@ use WeakMap;
  * - in-progress gauges (количество активных операций, помогает выявить зависшие удаления)
  *
  * Использует WeakMap для хранения таймингов, чтобы избежать утечек памяти в long-running процессах.
+ *
+ * @see DeletionMiddlewareInterface
  */
 final class MetricsDeletionMiddleware implements DeletionMiddlewareInterface
 {
@@ -58,6 +60,8 @@ final class MetricsDeletionMiddleware implements DeletionMiddlewareInterface
 
     /**
      * {@inheritdoc}
+     *
+     * Инкрементирует счётчик запусков и увеличивает in-progress gauge.
      */
     public function beforeDeleteRoot(object $root): void
     {
@@ -73,6 +77,9 @@ final class MetricsDeletionMiddleware implements DeletionMiddlewareInterface
 
     /**
      * {@inheritdoc}
+     *
+     * Декрементирует in-progress gauge, записывает длительность операции в гистограмму
+     * и инкрементирует счётчик завершённых операций.
      */
     public function afterDeleteRoot(object $root): void
     {
@@ -94,6 +101,9 @@ final class MetricsDeletionMiddleware implements DeletionMiddlewareInterface
 
     /**
      * {@inheritdoc}
+     *
+     * Инкрементирует счётчик запусков удаления детей и увеличивает in-progress gauge
+     * для фазы удаления детей.
      */
     public function beforeDeleteChildren(string $childClass, array $childIds, object $root): void
     {
@@ -112,6 +122,9 @@ final class MetricsDeletionMiddleware implements DeletionMiddlewareInterface
 
     /**
      * {@inheritdoc}
+     *
+     * Декрементирует in-progress gauge, записывает размер batch'а в гистограмму,
+     * инкрементирует счётчик завершённых операций и общее количество удалённых детей.
      */
     public function afterDeleteChildren(string $childClass, array $childIds, object $root): void
     {
@@ -146,6 +159,8 @@ final class MetricsDeletionMiddleware implements DeletionMiddlewareInterface
 
     /**
      * {@inheritdoc}
+     *
+     * Инкрементирует счётчик общего количества отсоединённых строк (через join-таблицы).
      */
     public function afterDetachRelations(string $parentClass, string $childClass, array $childIds, array $relation, object $root): void
     {
@@ -197,33 +212,37 @@ final class MetricsDeletionMiddleware implements DeletionMiddlewareInterface
     /**
      * Сохраняет время начала фазы и название gauge для последующего закрытия в onError.
      *
-     * @param object                   $root
-     * @param string                   $key   уникальный идентификатор фазы
-     * @param string                   $gauge имя gauge-метрики
-     * @param array<string, string>    $labels лейблы для gauge
+     * Если фаза с таким ключом уже существует, повторный вызов игнорируется.
+     * При первом открытии фазы инкрементирует соответствующий gauge.
+     *
+     * @param object                $root   корневая сущность
+     * @param string                $key    уникальный идентификатор фазы
+     * @param string                $gauge  имя gauge-метрики
+     * @param array<string, string> $labels лейблы для gauge
      */
     private function start(object $root, string $key, string $gauge, array $labels): void
-	{
-		$state = $this->timings[$root] ?? ['phases' => []];
+    {
+        $state = $this->timings[$root] ?? ['phases' => []];
 
-		if (!isset($state['phases'][$key])) {
-			$state['phases'][$key] = [
-				'start' => microtime(true),
-				'gauge' => $gauge,
-				'labels' => $labels,
-			];
-			$this->timings[$root] = $state;
+        if (!isset($state['phases'][$key])) {
+            $state['phases'][$key] = [
+                'start'  => microtime(true),
+                'gauge'  => $gauge,
+                'labels' => $labels,
+            ];
+            $this->timings[$root] = $state;
 
-			$this->metrics->incrementGauge($gauge, $labels);
-		}
-	}
+            $this->metrics->incrementGauge($gauge, $labels);
+        }
+    }
 
     /**
      * Завершает фазу и возвращает длительность, если фаза была активна.
+     *
      * Удаляет фазу из WeakMap, но не уменьшает gauge – это делается в after‑методах.
      *
-     * @param object $root
-     * @param string $key
+     * @param object $root корневая сущность
+     * @param string $key  уникальный идентификатор фазы
      *
      * @return float|null длительность в секундах или null, если фаза не была открыта
      */
@@ -251,9 +270,11 @@ final class MetricsDeletionMiddleware implements DeletionMiddlewareInterface
     /**
      * Преобразует FQCN в безопасный для метрик строковый идентификатор.
      *
-     * @param string $class полное имя класса
+     * Заменяет обратные слэши на подчёркивания и удаляет ведущий слеш.
      *
-     * @return string заменяет обратные слэши на подчёркивания
+     * @param string $class полное имя класса (FQCN)
+     *
+     * @return string безопасный идентификатор для использования в лейблах метрик
      */
     private function classLabel(string $class): string
     {
