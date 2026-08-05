@@ -8,7 +8,7 @@ use Shared\Deletion\Dto\{OrderedPlanDto, RelationsDto};
 use Shared\Deletion\Middleware\DeletionMiddlewareInterface;
 use Throwable;
 
-final class DeletionOrchestratorWrapper
+final class DeletionOrchestratorWrapper implements DeletionOrchestratorInterface
 {
     /**
      * @param DeletionOrchestrator                  $inner   оригинальный оркестратор (final)

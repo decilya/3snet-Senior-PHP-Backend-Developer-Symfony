@@ -10,7 +10,7 @@ use Shared\Deletion\Dto\{DependentGroupDto, OrderedPlanDto, RelationsDto};
 use Shared\Deletion\Middleware\DeletionMiddlewareInterface;
 use Throwable;
 
-final class DeletionOrchestrator
+final class DeletionOrchestrator implements DeletionOrchestratorInterface
 {
     /**
      * @param iterable<DeletionMiddlewareInterface> $middlewares

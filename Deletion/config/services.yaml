@@ -7,22 +7,23 @@ services:
         Shared\Deletion\Middleware\DeletionMiddlewareInterface:
             tags: ['deletion.middleware']
 
-    # 1. Реализация MetricsRecorderInterface (лог)
+    # ЯВНО регистрируем middleware – иначе _instanceof не сработает
+    Shared\Deletion\Middleware\MetricsDeletionMiddleware: ~
+    Shared\Deletion\Middleware\LoggingDeletionMiddleware: ~
+
     Shared\Deletion\Metrics\MetricsRecorderInterface:
         class: Shared\Deletion\Metrics\LogMetricsRecorder
 
-    # 2. Оригинальный оркестратор (переименовываем, чтобы освободить FQCN)
     Shared\Deletion\Service\DeletionOrchestrator.original:
         class: Shared\Deletion\Service\DeletionOrchestrator
         arguments:
             $middlewares: !tagged_iterator deletion.middleware
 
-    # 3. Наш Wrapper (принимает оригинал и middleware)
     Shared\Deletion\Service\DeletionOrchestratorWrapper:
         arguments:
             $inner: '@Shared\Deletion\Service\DeletionOrchestrator.original'
             $middlewares: !tagged_iterator deletion.middleware
 
-    # 4. Алиас: при запросе DeletionOrchestrator возвращаем Wrapper
-    Shared\Deletion\Service\DeletionOrchestrator:
+    # Алиас по ИНТЕРФЕЙСУ – теперь безопасно
+    Shared\Deletion\Service\DeletionOrchestratorInterface:
         alias: Shared\Deletion\Service\DeletionOrchestratorWrapper
