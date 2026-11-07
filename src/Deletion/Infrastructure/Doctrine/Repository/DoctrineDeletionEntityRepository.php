@@ -11,6 +11,7 @@ use Doctrine\DBAL\Connection;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Mapping\ClassMetadata;
 use LogicException;
+use Doctrine\DBAL\LockMode;
 
 /**
  * Реализация порта удаления через Doctrine DBAL (bulk-операции).
@@ -170,5 +171,29 @@ final readonly class DoctrineDeletionEntityRepository implements DeletionEntityR
             }
             return $affected;
         });
+    }
+
+    /**
+     * @param EntityClass $entity
+     * @param array<int|string> $ids
+     * @return void
+     */
+    public function lockByIds(EntityClass $entity, array $ids): void
+    {
+        if ($ids === []) {
+            return;
+        }
+
+        /** @var class-string $entityClassName */
+        $entityClassName = $entity->value;
+
+        $this->em->createQueryBuilder()
+            ->select('e')
+            ->from($entityClassName, 'e')
+            ->where('e.id IN (:ids)')
+            ->setParameter('ids', $ids)
+            ->getQuery()
+            ->setLockMode(LockMode::PESSIMISTIC_WRITE)
+            ->getResult();
     }
 }

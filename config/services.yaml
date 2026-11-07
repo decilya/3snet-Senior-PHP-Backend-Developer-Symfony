@@ -33,6 +33,9 @@ services:
     App\Deletion\Domain\Service\RelationActionResolverInterface:
         alias: App\Deletion\Infrastructure\Attribute\RelationActionResolver
 
+    App\Deletion\Application\Port\TransactionManagerInterface:
+        alias: App\Deletion\Infrastructure\Doctrine\DoctrineTransactionManager
+
     # 2. Скалярный параметр для Doctrine-репозитория
     App\Deletion\Infrastructure\Doctrine\Repository\DoctrineDeletionEntityRepository:
         arguments:

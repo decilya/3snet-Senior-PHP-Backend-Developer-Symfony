@@ -53,4 +53,14 @@ interface DeletionEntityRepositoryInterface
      * @return int Количество затронутых записей
      */
     public function softDeleteByIds(EntityClass $entity, array $ids): int;
+
+    /**
+     * Блокирует сущности по ID с помощью SELECT ... FOR UPDATE.
+     *
+     * @param EntityClass $entity Класс сущности
+     * @param array<int|string> $ids Список ID
+     *
+     * @return void
+     */
+    public function lockByIds(EntityClass $entity, array $ids): void;
 }
