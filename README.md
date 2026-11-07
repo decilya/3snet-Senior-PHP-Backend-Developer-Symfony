@@ -165,3 +165,12 @@ Content-Type: application/problem+json
 ```bash
 make test
 ```
+
+## На что обратить внимание при ревью (Highlights)
+
+Если вы хотите оценить архитектурные решения, рекомендую обратить внимание на следующие файлы:
+
+- **`src/Deletion/Application/Service/DeleteEntityUseCase.php`** — эталонный Application-слой. Он ничего не знает про Doctrine или SQL (Dependency Inversion). Вся работа с БД, транзакциями и блокировками скрыта за портами.
+- **`src/Deletion/UI/Http/EventListener/DeletionRateLimitListener.php`** — проверка Rate Limiter вынесена в событие `kernel.controller`, чтобы отсекать флуд невалидными данными **до** того, как `#[MapRequestPayload]` начнёт тратить ресурсы на валидацию.
+- **`src/Deletion/Infrastructure/Doctrine/Repository/DoctrineDeletionEntityRepository.php`** — реализация Bulk-операций (DBAL) и `PESSIMISTIC_WRITE` блокировок для предотвращения phantom reads.
+- **`src/Deletion/UI/Http/EventListener/DeletionExceptionListener.php`** — единая обработка всех ошибок в формате RFC 7807 (Problem Details) с пробросом `Retry-After`.
