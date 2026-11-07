@@ -6,8 +6,10 @@ namespace App\Deletion\UI\Http\Controller;
 
 use App\Deletion\Application\Command\DeleteEntityCommand;
 use App\Deletion\Application\Service\DeleteEntityUseCase;
+use App\Deletion\Domain\Exception\CyclicDependencyException;
 use App\Deletion\Domain\Exception\DeletionBlockedException;
 use App\Deletion\UI\Http\Request\DeleteEntityRequest;
+use Doctrine\Persistence\Mapping\MappingException;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
@@ -17,7 +19,7 @@ use Symfony\Component\Routing\Attribute\Route;
  * HTTP-контроллер для управления удалением сущностей.
  *
  * Вся логика делегируется в Application слой (DeleteEntityUseCase).
- * Контроллер отвечает только за прием запроса и формирование ответа.
+ * Ошибки возвращаются в формате RFC 7807 (Problem Details).
  */
 #[Route('/api/v1/deletion', name: 'api_deletion_')]
 final readonly class DeletionController
@@ -31,8 +33,6 @@ final readonly class DeletionController
      * Запускает процесс удаления сущностей.
      *
      * @param DeleteEntityRequest $request Валидированный DTO запроса
-     *
-     * @throws DeletionBlockedException Если удаление заблокировано политикой
      *
      * @return JsonResponse
      */
@@ -58,12 +58,42 @@ final readonly class DeletionController
                 ],
             ], Response::HTTP_OK);
 
-        } catch (DeletionBlockedException $e) {
-            // Возвращаем 409 Conflict, если сработала блокировка
-            return new JsonResponse([
-                'status'  => 'error',
-                'message' => $e->getMessage(),
-            ], Response::HTTP_CONFLICT);
+        } catch (DeletionBlockedException | CyclicDependencyException $e) {
+            // Доменные конфликты: блокировка удаления или цикл в графе
+            return $this->problem(
+                title:  'Deletion Conflict',
+                detail: $e->getMessage(),
+                status: Response::HTTP_CONFLICT,
+            );
+        } catch (MappingException $e) {
+            // Класс существует в PHP, но не является Doctrine-сущностью
+            return $this->problem(
+                title:  'Unprocessable Entity',
+                detail: sprintf(
+                    'Класс "%s" не является Doctrine-сущностью.',
+                    $request->entityClass
+                ),
+                status: Response::HTTP_UNPROCESSABLE_ENTITY,
+            );
         }
+    }
+
+    /**
+     * Формирует ответ в формате RFC 7807 (Problem Details for HTTP APIs).
+     *
+     * @param string $title  Краткое описание класса ошибки
+     * @param string $detail Подробное описание конкретной ситуации
+     * @param int    $status HTTP-статус
+     *
+     * @return JsonResponse
+     */
+    private function problem(string $title, string $detail, int $status): JsonResponse
+    {
+        return new JsonResponse([
+            'type'   => 'about:blank',
+            'title'  => $title,
+            'status' => $status,
+            'detail' => $detail,
+        ], $status);
     }
 }

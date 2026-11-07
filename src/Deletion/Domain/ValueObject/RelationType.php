@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace App\Deletion\Domain\ValueObject;
 
-use Doctrine\ORM\Mapping\ClassMetadata;
-use InvalidArgumentException;
-
 /**
- * Тип ассоциации между сущностями.
+ * Тип ассоциации между двумя сущностями.
  *
- * Изолирует домен от констант Doctrine. Если завтра мы перейдем на другую ORM,
- * изменится только фабричный метод fromDoctrine().
+ * Намеренно изолирован от конкретной ORM: домен не импортирует
+ * ни одного класса Doctrine. Маппинг значений из `ClassMetadata`
+ * выполняется в Infrastructure-слое (Anti-Corruption Layer).
+ *
+ * @psalm-immutable
  */
 enum RelationType: string
 {
@@ -21,24 +21,9 @@ enum RelationType: string
     case ManyToMany  = 'many_to_many';
 
     /**
-     * Фабрика из констант Doctrine ClassMetadata.
+     * true для типов, где у одной сущности много связанных.
      *
-     * @param int $doctrineType
-     * @return self
-     */
-    public static function fromDoctrine(int $doctrineType): self
-    {
-        return match ($doctrineType) {
-            ClassMetadata::ONE_TO_ONE   => self::OneToOne,
-            ClassMetadata::MANY_TO_ONE  => self::ManyToOne,
-            ClassMetadata::ONE_TO_MANY  => self::OneToMany,
-            ClassMetadata::MANY_TO_MANY => self::ManyToMany,
-            default => throw new InvalidArgumentException("Неизвестный тип ассоциации: {$doctrineType}"),
-        };
-    }
-
-    /**
-     * Относится ли связь к типу "Один-ко-Многим" или "Многие-ко-Многим".
+     * @return bool
      */
     public function isToMany(): bool
     {
@@ -46,7 +31,9 @@ enum RelationType: string
     }
 
     /**
-     * Относится ли связь к типу "Один-к-Одному" или "Многие-к-Одному".
+     * true для типов, где связь хранится во внешнем ключе.
+     *
+     * @return bool
      */
     public function isToOne(): bool
     {
