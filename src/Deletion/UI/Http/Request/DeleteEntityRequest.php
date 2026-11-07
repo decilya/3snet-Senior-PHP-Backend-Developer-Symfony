@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Deletion\UI\Http\Request;
 
 use Symfony\Component\Validator\Constraints as Assert;
+use App\Deletion\UI\Http\Validation\DoctrineEntity;
 
 /**
  * DTO для HTTP-запроса на удаление сущности.
@@ -23,7 +24,7 @@ final readonly class DeleteEntityRequest
      */
     public function __construct(
         #[Assert\NotBlank(message: 'Поле entityClass обязательно.')]
-        #[Assert\ClassExists(message: 'Класс "{{ value }}" не существует.')]
+        #[DoctrineEntity]
         public string $entityClass,
 
         #[Assert\NotBlank(message: 'Массив ids не может быть пустым.')]
