@@ -69,7 +69,7 @@ final readonly class DoctrineDeletionEntityRepository implements DeletionEntityR
 
         $meta = $this->em->getClassMetadata($entity->value);
         $pkField = $meta->getIdentifierFieldNames()[0];
-        $pkColumn = $this->conn->quoteIdentifier($meta->getColumnName($pkField));
+        $pkColumn = $this->conn->quoteSingleIdentifier($meta->getColumnName($pkField));
 
         $affected = 0;
 
@@ -79,8 +79,8 @@ final readonly class DoctrineDeletionEntityRepository implements DeletionEntityR
                 $joinTable = $mapping['joinTable'];
                 $affected += $this->conn->executeStatement(
                     sprintf('DELETE FROM %s WHERE %s IN (?)',
-                        $this->conn->quoteIdentifier($joinTable['name']),
-                        $this->conn->quoteIdentifier($joinTable['joinColumns'][0]['name'])
+                        $this->conn->quoteSingleIdentifier($joinTable['name']),
+                        $this->conn->quoteSingleIdentifier($joinTable['joinColumns'][0]['name'])
                     ),
                     [$ids],
                     [ArrayParameterType::STRING]
@@ -92,8 +92,8 @@ final readonly class DoctrineDeletionEntityRepository implements DeletionEntityR
             if (($mapping['isOwningSide'] ?? false) && isset($mapping['joinColumns'][0]['name'])) {
                 $affected += $this->conn->executeStatement(
                     sprintf('UPDATE %s SET %s = NULL WHERE %s IN (?)',
-                        $this->conn->quoteIdentifier($meta->getTableName()),
-                        $this->conn->quoteIdentifier($mapping['joinColumns'][0]['name']),
+                        $this->conn->quoteSingleIdentifier($meta->getTableName()),
+                        $this->conn->quoteSingleIdentifier($mapping['joinColumns'][0]['name']),
                         $pkColumn
                     ),
                     [$ids],
@@ -123,12 +123,12 @@ final readonly class DoctrineDeletionEntityRepository implements DeletionEntityR
         }
 
         $pkField = $meta->getIdentifierFieldNames()[0];
-        $pkColumn = $this->conn->quoteIdentifier($meta->getColumnName($pkField));
+        $pkColumn = $this->conn->quoteSingleIdentifier($meta->getColumnName($pkField));
 
         $affected = $this->conn->executeStatement(
             sprintf('UPDATE %s SET %s = :now WHERE %s IN (?)',
-                $this->conn->quoteIdentifier($meta->getTableName()),
-                $this->conn->quoteIdentifier($meta->getColumnName($this->softDeleteField)),
+                $this->conn->quoteSingleIdentifier($meta->getTableName()),
+                $this->conn->quoteSingleIdentifier($meta->getColumnName($this->softDeleteField)),
                 $pkColumn
             ),
             [
@@ -162,8 +162,8 @@ final readonly class DoctrineDeletionEntityRepository implements DeletionEntityR
 
             return $this->conn->executeStatement(
                 sprintf('DELETE FROM %s WHERE %s IN (?)',
-                    $this->conn->quoteIdentifier($meta->getTableName()),
-                    $this->conn->quoteIdentifier($pkColumn)
+                    $this->conn->quoteSingleIdentifier($meta->getTableName()),
+                    $this->conn->quoteSingleIdentifier($pkColumn)
                 ),
                 [$ids],
                 [ArrayParameterType::STRING]
@@ -196,8 +196,8 @@ final readonly class DoctrineDeletionEntityRepository implements DeletionEntityR
         $meta = $this->em->getClassMetadata($entity->value);
 
         $pkField = $meta->getIdentifierFieldNames()[0];
-        $tableName = $this->conn->quoteIdentifier($meta->getTableName());
-        $columnName = $this->conn->quoteIdentifier($meta->getColumnName($pkField));
+        $tableName = $this->conn->quoteSingleIdentifier($meta->getTableName());
+        $columnName = $this->conn->quoteSingleIdentifier($meta->getColumnName($pkField));
 
         $sql = sprintf('SELECT 1 FROM %s WHERE %s IN (?) FOR UPDATE', $tableName, $columnName);
 
