@@ -30,21 +30,16 @@ services:
     App\Deletion\Domain\Repository\DeletionEntityRepositoryInterface:
         alias: App\Deletion\Infrastructure\Doctrine\Repository\DoctrineDeletionEntityRepository
 
-    # 2. Связываем интерфейс Резолвера с реализацией
     App\Deletion\Domain\Service\RelationActionResolverInterface:
-        alias: App\Deletion\Application\Service\RelationActionResolver
+        alias: App\Deletion\Infrastructure\Attribute\RelationActionResolver
 
-    # 3. Передаем Резолвер в Планировщик
-    App\Deletion\Domain\Service\DeletionPlanner:
-        arguments:
-            $actionResolver: '@App\Deletion\Application\Service\RelationActionResolver'
-
-    # 4. Параметры для репозитория Doctrine
+    # 2. Скалярный параметр для Doctrine-репозитория (не автовайрится — скаляр)
     App\Deletion\Infrastructure\Doctrine\Repository\DoctrineDeletionEntityRepository:
         arguments:
             $softDeleteField: 'deletedAt'
 
-    # 5. Привязываем Rate Limiter к нашему контроллеру
+    # 3. Привязка Rate Limiter к контроллеру
+    #    (не автовайрится: RateLimiterFactory — не уникальный тип, лимитеров много)
     App\Deletion\UI\Http\Controller\DeletionController:
         arguments:
             $deletionLimitLimiter: '@limiter.deletion_limit'

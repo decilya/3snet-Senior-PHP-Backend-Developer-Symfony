@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Deletion\Application\Service;
+namespace App\Deletion\Infrastructure\Attribute;
 
 use App\Deletion\Attribute\BlockingDeletion;
 use App\Deletion\Attribute\CascadeDelete;
@@ -12,6 +12,14 @@ use App\Deletion\Domain\ValueObject\DeleteAction;
 use App\Deletion\Domain\ValueObject\RelationDescriptor;
 use ReflectionClass;
 
+/**
+ * Infrastructure-адаптер порта {@see RelationActionResolverInterface}.
+ *
+ * Читает PHP-атрибуты (CascadeDelete, DetachRelation, BlockingDeletion)
+ * у свойства исходной сущности. Реализация специфична для PHP-атрибутов —
+ * при желании можно заменить на чтение YAML, Doctrine-метаданных и т.д.,
+ * не меняя Domain/Application.
+ */
 final readonly class RelationActionResolver implements RelationActionResolverInterface
 {
     /**
@@ -25,8 +33,7 @@ final readonly class RelationActionResolver implements RelationActionResolverInt
             return DeleteAction::Cascade;
         }
 
-        $property   = $reflection->getProperty($relation->field);
-        $attributes = $property->getAttributes();
+        $attributes = $reflection->getProperty($relation->field)->getAttributes();
 
         foreach ($attributes as $attribute) {
             $name = $attribute->getName();

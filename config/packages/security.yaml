@@ -1,7 +1,4 @@
 security:
-    password_hashers:
-        Symfony\Component\Security\Core\User\InMemoryUser: 'plaintext'
-
     providers:
         in_memory:
             memory:
@@ -21,5 +18,27 @@ security:
             http_basic:
                 provider: in_memory
 
-    access_control:
-        - { path: ^/api/v1/deletion, roles: ROLE_API_USER }
+    # access_control УДАЛЁН — защита через #[IsGranted] в контроллере.
+    # Если появятся публичные /api-эндпоинты — вернем блок точечно
+
+
+# Пароли хешируются как plaintext только в dev/test (placeholder из .env).
+# В prod — 'auto'; значение API_USER_PASSWORD тогда ДОЛЖНО быть хешем,
+# сгенерированным через: php bin/console security:hash-password
+# Иначе пользователь не сможет аутентифицироваться (fail-closed).
+when@dev:
+    security:
+        password_hashers:
+            Symfony\Component\Security\Core\User\InMemoryUser: 'plaintext'
+
+when@test:
+    security:
+        password_hashers:
+            Symfony\Component\Security\Core\User\InMemoryUser: 'plaintext'
+
+when@prod:
+    security:
+        password_hashers:
+            Symfony\Component\Security\Core\User\InMemoryUser:
+                algorithm: 'auto'
+                cost: 13
