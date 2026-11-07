@@ -3,8 +3,8 @@ parameters:
 services:
     # _defaults configuration for services in *this* file
     _defaults:
-        autowire: true      # Automatically injects dependencies in your services.
-        autoconfigure: true # Automatically registers your services as commands, event subscribers, etc.
+        autowire: true
+        autoconfigure: true
 
     # makes classes in src/ available to be used as services
     App\:
@@ -33,13 +33,7 @@ services:
     App\Deletion\Domain\Service\RelationActionResolverInterface:
         alias: App\Deletion\Infrastructure\Attribute\RelationActionResolver
 
-    # 2. Скалярный параметр для Doctrine-репозитория (не автовайрится — скаляр)
+    # 2. Скалярный параметр для Doctrine-репозитория
     App\Deletion\Infrastructure\Doctrine\Repository\DoctrineDeletionEntityRepository:
         arguments:
             $softDeleteField: 'deletedAt'
-
-    # 3. Привязка Rate Limiter к контроллеру
-    #    (не автовайрится: RateLimiterFactory — не уникальный тип, лимитеров много)
-    App\Deletion\UI\Http\Controller\DeletionController:
-        arguments:
-            $deletionLimitLimiter: '@limiter.deletion_limit'
