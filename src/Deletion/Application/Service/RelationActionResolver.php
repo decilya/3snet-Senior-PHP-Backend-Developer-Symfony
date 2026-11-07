@@ -7,27 +7,17 @@ namespace App\Deletion\Application\Service;
 use App\Deletion\Attribute\BlockingDeletion;
 use App\Deletion\Attribute\CascadeDelete;
 use App\Deletion\Attribute\DetachRelation;
+use App\Deletion\Domain\Service\RelationActionResolverInterface;
 use App\Deletion\Domain\ValueObject\DeleteAction;
 use App\Deletion\Domain\ValueObject\RelationDescriptor;
 use ReflectionClass;
 
-/**
- * Сервис, определяющий действие для связи на основе PHP-атрибутов.
- *
- * Читает атрибуты (CascadeDelete, DetachRelation, BlockingDeletion)
- * у свойства исходной сущности и возвращает соответствующее действие.
- */
-final readonly class RelationActionResolver
+final readonly class RelationActionResolver implements RelationActionResolverInterface
 {
     /**
-     * Возвращает действие для указанной связи.
-     *
-     * @param RelationDescriptor $relation Описание связи
-     *
-     * @return DeleteAction
      * @throws \ReflectionException
      */
-    public function __invoke(RelationDescriptor $relation): DeleteAction
+    public function resolve(RelationDescriptor $relation): DeleteAction
     {
         $reflection = new ReflectionClass($relation->source->value);
 
@@ -35,7 +25,7 @@ final readonly class RelationActionResolver
             return DeleteAction::Cascade;
         }
 
-        $property = $reflection->getProperty($relation->field);
+        $property   = $reflection->getProperty($relation->field);
         $attributes = $property->getAttributes();
 
         foreach ($attributes as $attribute) {

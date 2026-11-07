@@ -13,7 +13,6 @@ services:
             - '../src/DependencyInjection/'
             - '../src/Entity/'
             - '../src/Kernel.php'
-            # Исключаем классы, которые не являются сервисами (VO, модели, атрибуты)
             - '../src/Deletion/Domain/ValueObject/'
             - '../src/Deletion/Domain/Model/'
             - '../src/Deletion/Domain/Exception/'
@@ -26,17 +25,26 @@ services:
 
     # 1. Связываем интерфейсы (Порты) с реализациями (Адаптерами)
     App\Deletion\Domain\Repository\RelationMetadataRepositoryInterface:
-        '@App\Deletion\Infrastructure\Doctrine\Repository\DoctrineRelationMetadataRepository'
+        alias: App\Deletion\Infrastructure\Doctrine\Repository\DoctrineRelationMetadataRepository
 
     App\Deletion\Domain\Repository\DeletionEntityRepositoryInterface:
-        '@App\Deletion\Infrastructure\Doctrine\Repository\DoctrineDeletionEntityRepository'
+        alias: App\Deletion\Infrastructure\Doctrine\Repository\DoctrineDeletionEntityRepository
 
-    # 2. Передаем Резолвер в Планировщик
+    # 2. Связываем интерфейс Резолвера с реализацией
+    App\Deletion\Domain\Service\RelationActionResolverInterface:
+        alias: App\Deletion\Application\Service\RelationActionResolver
+
+    # 3. Передаем Резолвер в Планировщик
     App\Deletion\Domain\Service\DeletionPlanner:
         arguments:
             $actionResolver: '@App\Deletion\Application\Service\RelationActionResolver'
 
-    # 3. Параметры для репозитория Doctrine
+    # 4. Параметры для репозитория Doctrine
     App\Deletion\Infrastructure\Doctrine\Repository\DoctrineDeletionEntityRepository:
         arguments:
             $softDeleteField: 'deletedAt'
+
+    # 5. Привязываем Rate Limiter к нашему контроллеру
+    App\Deletion\UI\Http\Controller\DeletionController:
+        arguments:
+            $deletionLimitLimiter: '@limiter.deletion_limit'

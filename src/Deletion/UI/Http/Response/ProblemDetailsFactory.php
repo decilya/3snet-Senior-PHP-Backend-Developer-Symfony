@@ -17,13 +17,12 @@ final readonly class ProblemDetailsFactory
     /**
      * Формирует JSON-ответ с описанием ошибки.
      *
-     * @param string $title  Краткое описание класса ошибки
-     * @param string $detail Подробное описание конкретной ситуации
      * @param int    $status HTTP-статус
-     *
+     * @param string $title Краткое описание класса ошибки
+     * @param string $detail Подробное описание конкретной ситуации
      * @return JsonResponse
      */
-    public function create(string $title, string $detail, int $status): JsonResponse
+    public function create(int $status, string $title, string $detail = ''): JsonResponse
     {
         return new JsonResponse([
             'type'   => 'about:blank',

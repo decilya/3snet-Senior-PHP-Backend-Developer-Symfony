@@ -1,0 +1,25 @@
+security:
+    password_hashers:
+        Symfony\Component\Security\Core\User\InMemoryUser: 'plaintext'
+
+    providers:
+        in_memory:
+            memory:
+                users:
+                    api:
+                        password: '%env(API_USER_PASSWORD)%'
+                        roles: ['ROLE_API_USER']
+
+    firewalls:
+        dev:
+            pattern: ^/(_(profiler|wdt)|css|images|js)/
+            security: false
+
+        api:
+            pattern: ^/api
+            stateless: true
+            http_basic:
+                provider: in_memory
+
+    access_control:
+        - { path: ^/api/v1/deletion, roles: ROLE_API_USER }

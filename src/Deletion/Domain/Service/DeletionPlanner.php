@@ -11,6 +11,7 @@ use App\Deletion\Domain\Model\RelationMap;
 use App\Deletion\Domain\ValueObject\DeleteAction;
 use App\Deletion\Domain\ValueObject\EntityClass;
 use App\Deletion\Domain\ValueObject\RelationDescriptor;
+use App\Deletion\Domain\Service\RelationActionResolverInterface;
 
 /**
  * Доменный сервис для построения плана удаления.
@@ -19,19 +20,15 @@ use App\Deletion\Domain\ValueObject\RelationDescriptor;
  * Формирует топологический порядок (post-order), при котором дочерние
  * сущности всегда обрабатываются раньше родительских.
  */
-final class DeletionPlanner
+final readonly class DeletionPlanner
 {
-    /** @var callable(RelationDescriptor): DeleteAction */
-    private $actionResolver;
 
     /**
-     * @param callable(RelationDescriptor): DeleteAction $actionResolver
-     *        Функция, которая по описанию связи возвращает действие (Cascade, Detach, Block)
+     * @param \App\Deletion\Domain\Service\RelationActionResolverInterface $actionResolver
      */
-    public function __construct(callable $actionResolver)
-    {
-        $this->actionResolver = $actionResolver;
-    }
+    public function __construct(
+        private RelationActionResolverInterface $actionResolver,
+    ) {}
 
     /**
      * Строит план удаления для корневой сущности.
