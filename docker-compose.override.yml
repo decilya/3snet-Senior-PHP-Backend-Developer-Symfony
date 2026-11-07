@@ -1,0 +1,15 @@
+# ============================================================================
+# Dev-override: монтирование, Xdebug, порты
+# В git: добавьте в .gitignore
+# ============================================================================
+services:
+  php:
+    environment:
+      XDEBUG_MODE: "${XDEBUG_MODE:-debug,coverage}"
+    # Монтируем composer cache, чтобы установка была быстрой
+    volumes:
+        - ./:/var/www/html:cached
+        - composer_cache:/tmp/composer-cache
+
+volumes:
+  composer_cache:
