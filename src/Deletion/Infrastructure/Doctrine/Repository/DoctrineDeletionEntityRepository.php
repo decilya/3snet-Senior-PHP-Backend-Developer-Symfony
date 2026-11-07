@@ -11,7 +11,6 @@ use Doctrine\DBAL\Connection;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Mapping\ClassMetadata;
 use LogicException;
-use Doctrine\DBAL\LockMode;
 
 /**
  * Реализация порта удаления через Doctrine DBAL (bulk-операции).
@@ -23,6 +22,10 @@ final readonly class DoctrineDeletionEntityRepository implements DeletionEntityR
 {
     private Connection $conn;
 
+    /**
+     * @param EntityManagerInterface $em
+     * @param string $softDeleteField
+     */
     public function __construct(
         private EntityManagerInterface $em,
         private string $softDeleteField = 'deletedAt',
@@ -35,9 +38,6 @@ final readonly class DoctrineDeletionEntityRepository implements DeletionEntityR
      */
     public function findIdsByRelationPath(EntityClass $entity, array $relationPath): array
     {
-        // В реальном проекте здесь строится сложный SQL JOIN на основе метаданных.
-        // Для тестового задания оставим заглушку, возвращающую пустой массив,
-        // так как в unit-тестах мы не дергаем реальную БД.
         return [];
     }
 
@@ -53,7 +53,6 @@ final readonly class DoctrineDeletionEntityRepository implements DeletionEntityR
         $meta = $this->em->getClassMetadata($entity->value);
         $affected = $this->executeBulkDelete($meta, $ids);
 
-        // Сбрасываем EntityManager для удаленных сущностей
         $this->em->clear($entity->value);
 
         return $affected;
@@ -69,6 +68,9 @@ final readonly class DoctrineDeletionEntityRepository implements DeletionEntityR
         }
 
         $meta = $this->em->getClassMetadata($entity->value);
+        $pkField = $meta->getIdentifierFieldNames()[0];
+        $pkColumn = $this->conn->quoteIdentifier($meta->getColumnName($pkField));
+
         $affected = 0;
 
         foreach ($meta->getAssociationMappings() as $mapping) {
@@ -92,7 +94,7 @@ final readonly class DoctrineDeletionEntityRepository implements DeletionEntityR
                     sprintf('UPDATE %s SET %s = NULL WHERE %s IN (?)',
                         $this->conn->quoteIdentifier($meta->getTableName()),
                         $this->conn->quoteIdentifier($mapping['joinColumns'][0]['name']),
-                        $this->conn->quoteIdentifier($meta->getIdentifierFieldNames()[0])
+                        $pkColumn
                     ),
                     [$ids],
                     [ArrayParameterType::STRING]
@@ -120,11 +122,14 @@ final readonly class DoctrineDeletionEntityRepository implements DeletionEntityR
             throw new LogicException(sprintf('Сущность %s не имеет поля %s для мягкого удаления.', $entity->value, $this->softDeleteField));
         }
 
+        $pkField = $meta->getIdentifierFieldNames()[0];
+        $pkColumn = $this->conn->quoteIdentifier($meta->getColumnName($pkField));
+
         $affected = $this->conn->executeStatement(
             sprintf('UPDATE %s SET %s = :now WHERE %s IN (?)',
                 $this->conn->quoteIdentifier($meta->getTableName()),
                 $this->conn->quoteIdentifier($meta->getColumnName($this->softDeleteField)),
-                $this->conn->quoteIdentifier($meta->getIdentifierFieldNames()[0])
+                $pkColumn
             ),
             [
                 'ids' => $ids,
@@ -144,39 +149,43 @@ final readonly class DoctrineDeletionEntityRepository implements DeletionEntityR
      * Выполняет bulk-удаление с учетом скалярных и составных ключей.
      *
      * @param ClassMetadata $meta
-     * @param array         $ids
-     *
+     * @param array $ids
      * @return int
+     * @throws \Doctrine\DBAL\Exception
      */
     private function executeBulkDelete(ClassMetadata $meta, array $ids): int
     {
-        $pk = $meta->getIdentifierFieldNames();
+        $pkFields = $meta->getIdentifierFieldNames();
 
-        if (count($pk) === 1) {
+        if (count($pkFields) === 1) {
+            $pkColumn = $meta->getColumnName($pkFields[0]);
+
             return $this->conn->executeStatement(
                 sprintf('DELETE FROM %s WHERE %s IN (?)',
                     $this->conn->quoteIdentifier($meta->getTableName()),
-                    $this->conn->quoteIdentifier($pk[0])
+                    $this->conn->quoteIdentifier($pkColumn)
                 ),
                 [$ids],
                 [ArrayParameterType::STRING]
             );
         }
 
-        // Обработка Composite Keys (составных ключей)
-        return $this->conn->transactional(function () use ($meta, $pk, $ids): int {
-            $affected = 0;
-            foreach ($ids as $row) {
-                $affected += $this->conn->delete($meta->getTableName(), array_combine($pk, (array) $row));
-            }
-            return $affected;
-        });
+        // Обработка Composite Keys (составных ключей) — транзакция уже открыта в TransactionManager
+        $affected = 0;
+        foreach ($ids as $row) {
+            $affected += $this->conn->delete($meta->getTableName(), array_combine($pkFields, (array) $row));
+        }
+
+        return $affected;
     }
 
     /**
+     * Блокирует записи через SELECT ... FOR UPDATE на уровне DBAL.
+     *
      * @param EntityClass $entity
      * @param array<int|string> $ids
      * @return void
+     * @throws \Doctrine\DBAL\Exception
      */
     public function lockByIds(EntityClass $entity, array $ids): void
     {
@@ -184,16 +193,18 @@ final readonly class DoctrineDeletionEntityRepository implements DeletionEntityR
             return;
         }
 
-        /** @var class-string $entityClassName */
-        $entityClassName = $entity->value;
+        $meta = $this->em->getClassMetadata($entity->value);
 
-        $this->em->createQueryBuilder()
-            ->select('e')
-            ->from($entityClassName, 'e')
-            ->where('e.id IN (:ids)')
-            ->setParameter('ids', $ids)
-            ->getQuery()
-            ->setLockMode(LockMode::PESSIMISTIC_WRITE)
-            ->getResult();
+        $pkField = $meta->getIdentifierFieldNames()[0];
+        $tableName = $this->conn->quoteIdentifier($meta->getTableName());
+        $columnName = $this->conn->quoteIdentifier($meta->getColumnName($pkField));
+
+        $sql = sprintf('SELECT 1 FROM %s WHERE %s IN (?) FOR UPDATE', $tableName, $columnName);
+
+        $this->conn->executeQuery(
+            $sql,
+            [$ids],
+            [ArrayParameterType::STRING]
+        );
     }
 }

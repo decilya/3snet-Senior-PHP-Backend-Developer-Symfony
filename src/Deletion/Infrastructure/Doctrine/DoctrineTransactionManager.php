@@ -23,21 +23,23 @@ final readonly class DoctrineTransactionManager implements TransactionManagerInt
     /**
      * @template T
      * @param callable(): T $operation
-     * @return T
+     * @return mixed
+     * @phpstan-return T
+     * @psalm-return T
      * @throws \Throwable
      */
     public function transactional(callable $operation): mixed
     {
-        $this->entityManager->beginTransaction();
+        $connection = $this->entityManager->getConnection();
+        $connection->beginTransaction();
 
         try {
             $result = $operation();
-            $this->entityManager->flush();
-            $this->entityManager->commit();
+            $connection->commit();
 
             return $result;
         } catch (\Throwable $e) {
-            $this->entityManager->rollback();
+            $connection->rollBack();
             throw $e;
         }
     }
