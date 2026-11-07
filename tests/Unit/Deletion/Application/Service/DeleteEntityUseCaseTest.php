@@ -53,7 +53,7 @@ final class DeleteEntityUseCaseTest extends TestCase
 
     /**
      * Проверяет успешное выполнение сценария с каскадным удалением.
-     * 
+     *
      * @return void
      */
     public function testExecutesDeletionSuccessfully(): void
